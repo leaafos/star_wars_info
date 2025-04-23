@@ -12,7 +12,7 @@ class _CharactersScreenState extends State<CharactersScreen> {
 
   // Fonction pour récupérer les personnages depuis l'API
   Future<void> fetchCharacters() async {
-    final response = await http.get(Uri.parse('https://swapi.tech/api/people?page=1&limit=15'));
+    final response = await http.get(Uri.parse('https://swapi.tech/api/people?page=1&limit=10'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -73,7 +73,7 @@ class _CharactersScreenState extends State<CharactersScreen> {
               crossAxisCount: crossAxisCount, // Nombre de colonnes basé sur la taille de l'écran
               crossAxisSpacing: 10, // Espacement horizontal entre les éléments
               mainAxisSpacing: 10, // Espacement vertical entre les éléments
-              childAspectRatio: 0.75, // Rapport largeur/hauteur des cartes
+              childAspectRatio: 0.95, // Rapport largeur/hauteur des cartes
             ),
             itemCount: characters.length,
             itemBuilder: (context, index) {
