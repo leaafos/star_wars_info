@@ -12,7 +12,7 @@ class _CharactersScreenState extends State<CharactersScreen> {
 
   // Fonction pour récupérer les personnages depuis l'API
   Future<void> fetchCharacters() async {
-    final response = await http.get(Uri.parse('https://swapi.tech/api/people?page=1&limit=10'));
+    final response = await http.get(Uri.parse('https://swapi.tech/api/people?page=1&limit=15'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);

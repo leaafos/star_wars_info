@@ -9,44 +9,57 @@ class PlanetsScreen extends StatefulWidget {
 
 class _PlanetsScreenState extends State<PlanetsScreen> {
   List planets = [];
+  String? nextPageUrl;
+  bool isLoading = false;
 
-  Future<void> fetchPlanets() async {
-    final response = await http.get(Uri.parse('https://swapi.tech/api/planets?page=1&limit=10'));
+  // Fonction pour charger les planètes à partir d'une page spécifique
+  Future<void> fetchPlanets(String url) async {
+    if (isLoading) return; // Empêche les appels multiples simultanés
+    setState(() {
+      isLoading = true;
+    });
 
+    final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      List tempPlanets = [];
+      var data = json.decode(response.body);
+      setState(() {
+        nextPageUrl = data['next']; // Mise à jour de l'URL de la page suivante
+      });
 
-      for (var planet in data['results']) {
-        final detailResponse = await http.get(Uri.parse(planet['url']));
-        if (detailResponse.statusCode == 200) {
-          final planetDetails = json.decode(detailResponse.body);
-          final props = planetDetails['result']['properties'];
-
-          tempPlanets.add({
-            'name': planet['name'],
-            'climate': props['climate'],
-            'terrain': props['terrain'],
-            'population': props['population'],
-            'diameter': props['diameter'],
-            'gravity': props['gravity'],
-            'orbital_period': props['orbital_period'],
-            'rotation_period': props['rotation_period'],
-            'surface_water': props['surface_water'],
-          });
-        }
+      // Charger les informations détaillées de chaque planète de cette page
+      List newPlanets = [];
+      for (var planetData in data['results']) {
+        var detailedPlanet = await fetchPlanetDetails(planetData['url']); // Détails supplémentaires
+        newPlanets.add(detailedPlanet);
       }
 
       setState(() {
-        planets = tempPlanets;
+        planets.addAll(newPlanets); // Ajouter les nouvelles planètes à la liste
+        isLoading = false;
       });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      throw Exception('Failed to load planets');
+    }
+  }
+
+  // Fonction pour charger les détails complets d'une planète
+  Future<Map> fetchPlanetDetails(String url) async {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      var planetDetails = json.decode(response.body);
+      return planetDetails['result']['properties'];
+    } else {
+      throw Exception('Failed to load planet details');
     }
   }
 
   @override
   void initState() {
     super.initState();
-    fetchPlanets();
+    fetchPlanets('https://swapi.tech/api/planets'); // Charger la première page de planètes
   }
 
   @override
@@ -60,59 +73,88 @@ class _PlanetsScreenState extends State<PlanetsScreen> {
       crossAxisCount = 3;
     }
 
-    return planets.isEmpty
-        ? Center(child: CircularProgressIndicator())
-        : GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: planets.length,
-            itemBuilder: (context, index) {
-              final planet = planets[index];
-              return Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                margin: EdgeInsets.all(10),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        planet['name'],
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green[700],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Planets"),
+      ),
+      body: planets.isEmpty
+          ? Center(child: CircularProgressIndicator())  // Indicateur de chargement si aucune planète n'est encore chargée
+          : Column(
+              children: [
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: planets.length,
+                    itemBuilder: (context, index) {
+                      final planet = planets[index];
+                      return Card(
+                        elevation: 5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
-                      ),
-                      SizedBox(height: 10),
-                      if (planet['climate'] != null)
-                        Text("Climate: ${planet['climate']}", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['terrain'] != null)
-                        Text("Terrain: ${planet['terrain']}", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['population'] != null)
-                        Text("Population: ${planet['population']}", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['diameter'] != null)
-                        Text("Diameter: ${planet['diameter']} km", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['gravity'] != null)
-                        Text("Gravity: ${planet['gravity']}", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['orbital_period'] != null)
-                        Text("Orbital Period: ${planet['orbital_period']} days", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['rotation_period'] != null)
-                        Text("Rotation Period: ${planet['rotation_period']} hours", style: TextStyle(color: Colors.grey[700])),
-                      if (planet['surface_water'] != null)
-                        Text("Water Surface: ${planet['surface_water']}%", style: TextStyle(color: Colors.grey[700])),
-                    ],
+                        margin: EdgeInsets.all(10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Titre de la planète
+                              Text(
+                                planet['name'] ?? 'Unknown',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              if (planet['climate'] != null)
+                                Text("Climate: ${planet['climate'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['terrain'] != null)
+                                Text("Terrain: ${planet['terrain'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['population'] != null)
+                                Text("Population: ${planet['population'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['diameter'] != null)
+                                Text("Diameter: ${planet['diameter'] ?? 'Unknown'} km", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['gravity'] != null)
+                                Text("Gravity: ${planet['gravity'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['orbital_period'] != null)
+                                Text("Orbital Period: ${planet['orbital_period'] ?? 'Unknown'} days", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['rotation_period'] != null)
+                                Text("Rotation Period: ${planet['rotation_period'] ?? 'Unknown'} hours", style: TextStyle(color: Colors.grey[700])),
+                              if (planet['surface_water'] != null)
+                                Text("Water Surface: ${planet['surface_water'] ?? 'Unknown'}%", style: TextStyle(color: Colors.grey[700])),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              );
-            },
-          );
+                if (nextPageUrl != null && !isLoading) // Si une autre page est disponible et qu'on ne charge pas déjà
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (nextPageUrl != null) {
+                          fetchPlanets(nextPageUrl!);  // Charger la page suivante
+                        }
+                      },
+                      child: Text("Charger plus"),
+                    ),
+                  ),
+                if (isLoading)  // Afficher un indicateur de chargement pendant le chargement de la page suivante
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(),
+                  ),
+              ],
+            ),
+    );
   }
 }
