@@ -80,6 +80,7 @@ class _PlanetsScreenState extends State<PlanetsScreen> {
       body: planets.isEmpty
           ? Center(child: CircularProgressIndicator())  // Indicateur de chargement si aucune planète n'est encore chargée
           : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: GridView.builder(
@@ -98,41 +99,52 @@ class _PlanetsScreenState extends State<PlanetsScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         margin: EdgeInsets.all(10),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Titre de la planète
-                              Text(
-                                planet['name'] ?? 'Unknown',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green[700],
+                        clipBehavior: Clip.antiAlias, // Ajouté pour gérer les débordements visuels
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              padding: const EdgeInsets.all(12.0),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                  minWidth: constraints.maxWidth,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      planet['name'] ?? 'Unknown',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green[700],
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+                                    if (planet['climate'] != null)
+                                      Text("Climate: ${planet['climate']}", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['terrain'] != null)
+                                      Text("Terrain: ${planet['terrain']}", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['population'] != null)
+                                      Text("Population: ${planet['population']}", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['diameter'] != null)
+                                      Text("Diameter: ${planet['diameter']} km", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['gravity'] != null)
+                                      Text("Gravity: ${planet['gravity']}", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['orbital_period'] != null)
+                                      Text("Orbital Period: ${planet['orbital_period']} days", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['rotation_period'] != null)
+                                      Text("Rotation Period: ${planet['rotation_period']} hours", style: TextStyle(color: Colors.grey[700])),
+                                    if (planet['surface_water'] != null)
+                                      Text("Water Surface: ${planet['surface_water']}%", style: TextStyle(color: Colors.grey[700])),
+                                  ],
                                 ),
                               ),
-                              SizedBox(height: 10),
-                              if (planet['climate'] != null)
-                                Text("Climate: ${planet['climate'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['terrain'] != null)
-                                Text("Terrain: ${planet['terrain'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['population'] != null)
-                                Text("Population: ${planet['population'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['diameter'] != null)
-                                Text("Diameter: ${planet['diameter'] ?? 'Unknown'} km", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['gravity'] != null)
-                                Text("Gravity: ${planet['gravity'] ?? 'Unknown'}", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['orbital_period'] != null)
-                                Text("Orbital Period: ${planet['orbital_period'] ?? 'Unknown'} days", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['rotation_period'] != null)
-                                Text("Rotation Period: ${planet['rotation_period'] ?? 'Unknown'} hours", style: TextStyle(color: Colors.grey[700])),
-                              if (planet['surface_water'] != null)
-                                Text("Water Surface: ${planet['surface_water'] ?? 'Unknown'}%", style: TextStyle(color: Colors.grey[700])),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       );
+
                     },
                   ),
                 ),
